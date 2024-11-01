@@ -5,6 +5,7 @@ const paisRoutes = require('./routes/pais');
 const proveedorRoutes = require('./routes/proveedor');
 const sustanciaRoutes = require('./routes/sustancia');
 const anioRoutes = require('./routes/anio');
+const fileRoutes = require('./routes/file');
 const cupoRoutes = require('./routes/cupo');
 const gruposustRoutes = require('./routes/grupo_sust');
 const importRoutes = require('./routes/importacion');
@@ -30,6 +31,8 @@ app.use('/api/proveedors', proveedorRoutes);
 app.use('/api/sustancias', sustanciaRoutes);
 
 app.use('/api/anios', anioRoutes);
+
+app.use('/api/files', fileRoutes);
 
 app.use('/api/gruposusts', gruposustRoutes);
 

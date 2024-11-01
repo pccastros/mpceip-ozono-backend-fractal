@@ -26,7 +26,7 @@ router.get('/importador/:importador', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         // Consultar maestro
-        const masterQuery = 'SELECT id,created_at,updated_at,authorization_date,solicitud_date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo FROM public.importacion';
+        const masterQuery = 'SELECT id,created_at,updated_at,authorization_date,solicitud_date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion';
         const masterResult = await pool.query(masterQuery);
 
         if (masterResult.rows.length === 0) {
