@@ -8,7 +8,7 @@ router.use(cors());
 // Obtener todos los anios
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM public.anio');
+    const { rows } = await pool.query('SELECT * FROM public.anio ORDER BY id DESC');
       res.send(rows);
   } catch (err) {
       console.error(err.message);

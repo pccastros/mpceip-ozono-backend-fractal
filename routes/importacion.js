@@ -10,7 +10,7 @@ router.use(cors());
 router.get('/importador/:importador', async (req, res) => {
   const { importador } = req.params;
   try {
-    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = $2', [importador, 'Aprobado']);
+    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = $2 ORDER BY id DESC', [importador, 'Aprobado']);
     if (rows.length === 0) {
       return res.status(404).json({ msg: 'Importacion no encontrada' });
     }
@@ -26,7 +26,7 @@ router.get('/importador/:importador', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         // Consultar maestro
-        const masterQuery = 'SELECT id,created_at,updated_at,authorization_date,solicitud_date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion';
+        const masterQuery = 'SELECT id,created_at,updated_at,authorization_date,solicitud_date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion ORDER BY id';
         const masterResult = await pool.query(masterQuery);
 
         if (masterResult.rows.length === 0) {

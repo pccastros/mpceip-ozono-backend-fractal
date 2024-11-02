@@ -24,9 +24,10 @@ router.get('/:id', async (req, res) => {
       SELECT cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc,
       SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hcfc,
       SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hfc,
+      SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS solicitudes_polioles,
       cu.hcfc::numeric -SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
         cu.hfc::numeric - SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hfc,
-        SUM(CASE WHEN grupo = 'Polioles' THEN total_solicitud ELSE 0 END) AS total_polioles
+        SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS total_polioles
       FROM public.cupo cu
       INNER JOIN public.importacion im ON cu.importador_id = im.importador_id
       WHERE cu.importador_id = $1
