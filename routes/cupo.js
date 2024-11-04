@@ -21,18 +21,15 @@ router.get('/:id', async (req, res) => {
   try {
     // const { rows } = await pool.query('SELECT * FROM public.cupo WHERE importador_id = $1', [id]);
     const { rows } = await pool.query(`
-    SELECT distinct cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc,
+      SELECT cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc,
       SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hcfc,
       SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hfc,
       SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS solicitudes_polioles,
-        cu.hcfc::numeric - SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
+      cu.hcfc::numeric -SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
         cu.hfc::numeric - SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hfc,
-      SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS total_polioles
-    FROM public.cupo cu
-    INNER JOIN (
-      SELECT DISTINCT importador_id, grupo , total_solicitud
-      FROM public.importacion
-    ) im ON cu.importador_id = im.importador_id
+        SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS total_polioles
+      FROM public.cupo cu
+      INNER JOIN public.importacion im ON cu.importador_id = im.importador_id
       WHERE cu.importador_id = $1
       GROUP BY cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc
     `, [id]);
