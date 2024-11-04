@@ -104,6 +104,15 @@ router.post('/', async (req, res) => {
     // Iniciar transacción
     await pool.query('BEGIN');
 
+    // Verificar si ya existe un registro con el mismo 'vue'
+    const checkDuplicate = 'SELECT COUNT(*) FROM public.importacion WHERE vue = $1';
+    const duplicateResult = await pool.query(checkDuplicate, [body.vue]);
+
+    if (duplicateResult.rows[0].count > 0) {
+      // Si existe un duplicado, lanzar un error
+      return res.status(400).json({ message: 'Ya existe una importación con el mismo vue' });
+    }
+
     // Insertar en la tabla maestra
     const masterInsert = 'INSERT INTO public.importacion(authorization_date,solicitud_date, month, cupo_asignado, status, cupo_restante, total_solicitud, total_pesokg, vue, data_file_id, importador, years, country, proveedor, grupo, importador_id,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,NOW(),NOW()) RETURNING id';
     const masterValues = [body.authorization_date,body.solicitud_date, body.month, body.cupo_asignado, body.status, body.cupo_restante, body.total_solicitud, body.total_pesokg, body.vue, body.data_file_id, body.importador, body.years, body.pais, body.proveedor, body.grupo, body.importador_id];
