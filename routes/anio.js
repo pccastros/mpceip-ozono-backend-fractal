@@ -8,7 +8,7 @@ router.use(cors());
 // Obtener todos los anios
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM public.anio ORDER BY id DESC');
+    const { rows } = await pool.query('SELECT * FROM public.anio ORDER BY name DESC');
       res.send(rows);
   } catch (err) {
       console.error(err.message);
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 // Obtener solo los grupo_sust activos
 router.get('/active', async (req, res) => {
   try {
-      const { rows } = await pool.query('SELECT * FROM public.anio WHERE activo = true');
+      const { rows } = await pool.query('SELECT * FROM public.anio WHERE activo = true ORDER BY id DESC');
       res.send(rows);
   } catch (err) {
       console.error(err.message);
