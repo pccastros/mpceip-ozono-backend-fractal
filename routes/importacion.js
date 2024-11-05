@@ -40,6 +40,7 @@ router.get('/', async (req, res) => {
          // masterResult.rows[i].details = detailResult.rows;
        // }
 
+        console.log(masterResult.rows[0]);
         res.json(masterResult.rows);
     } catch (err) {
         console.error(err.message);
