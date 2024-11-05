@@ -10,7 +10,10 @@ router.use(cors());
 router.get('/importador/:importador', async (req, res) => {
   const { importador } = req.params;
   try {
-    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = $2', [importador, 'Aprobado']);
+    const statuses = ['Aprobado', 'Confirmado', 'Validado'];
+    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) ORDER BY id DESC', [importador, statuses]);    
+    console.log(rows)
+
     if (rows.length === 0) {
       return res.status(404).json({ msg: 'Importacion no encontrada' });
     }
@@ -26,7 +29,7 @@ router.get('/importador/:importador', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         // Consultar maestro
-        const masterQuery = 'SELECT id,created_at,updated_at,authorization_date,solicitud_date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo FROM public.importacion';
+        const masterQuery = 'SELECT id,created_at,updated_at,authorization_date,solicitud_date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion ORDER BY id';
         const masterResult = await pool.query(masterQuery);
 
         if (masterResult.rows.length === 0) {
@@ -102,6 +105,15 @@ router.post('/', async (req, res) => {
     // Iniciar transacción
     await pool.query('BEGIN');
 
+    // Verificar si ya existe un registro con el mismo 'vue'
+    const checkDuplicate = 'SELECT COUNT(*) FROM public.importacion WHERE vue = $1';
+    const duplicateResult = await pool.query(checkDuplicate, [body.vue]);
+
+    if (duplicateResult.rows[0].count > 0) {
+      // Si existe un duplicado, lanzar un error
+      return res.status(400).json({ message: 'Ya existe una importación con el mismo vue' });
+    }
+
     // Insertar en la tabla maestra
     const masterInsert = 'INSERT INTO public.importacion(authorization_date,solicitud_date, month, cupo_asignado, status, cupo_restante, total_solicitud, total_pesokg, vue, data_file_id, importador, years, country, proveedor, grupo, importador_id,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,NOW(),NOW()) RETURNING id';
     const masterValues = [body.authorization_date,body.solicitud_date, body.month, body.cupo_asignado, body.status, body.cupo_restante, body.total_solicitud, body.total_pesokg, body.vue, body.data_file_id, body.importador, body.years, body.pais, body.proveedor, body.grupo, body.importador_id];
@@ -155,6 +167,30 @@ router.put('/status/:id', async (req, res) => {
   }
 });
 
+// Confirmar importacion por id
+router.put('/confirm/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Confirmado', id]);
+    res.json(`Importación ${id} confirmada con éxito`);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor'+err.message);
+  }
+});
+
+// Validar importacion por id
+router.put('/validate/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Validado', id]);
+    res.json(`Importación ${id} confirmada con éxito`);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor'+err.message);
+  }
+});
+
 router.put('/fileimport/:id', async (req, res) => {
   try {
     console.log(req.body);
@@ -196,5 +232,37 @@ router.put('/', async (req, res) => {
     res.status(500).send('Error del servidor'+err.message);
   }
 }
+);
+
+router.put('/aprobacion', async (req, res) => {
+
+  const body = req.body;
+  try {
+    console.log(req.body);
+    console.log(req.body.factura_file_it);
+    console.log(req.body.dai_file_id);
+
+    const id = req.body.id;
+
+    // Iniciar transacción
+    await pool.query('BEGIN');
+
+    // Actualizar en la tabla maestra
+    const masterUpdate
+      = 'UPDATE public.importacion SET factura_file_it = $1, dai_file_id = $2, updated_at = NOW() WHERE id = $3';
+    const masterValues = [body.factura_file_it, body.dai_file_id, body.id];
+    await pool.query(masterUpdate, masterValues);
+    await pool.query('COMMIT');
+    res.json(`Importación ${id} actualizada con éxito`);
+  }
+  catch (err
+  ) {
+    await pool.query('ROLLBACK');
+    console.error(err);
+    res.status(500).send('Error del servidor'+err.message);
+  }
+}
+
+
 );
 module.exports = router;

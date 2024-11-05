@@ -5,10 +5,10 @@ const cors = require('cors');
 
 // Habilita CORS para todas las rutas
 router.use(cors());
-// Obtener todos los anios
+// Obtener todos los files
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM public.anio ORDER BY name DESC');
+    const { rows } = await pool.query('SELECT * FROM public.files');
       res.send(rows);
   } catch (err) {
       console.error(err.message);
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 // Obtener solo los grupo_sust activos
 router.get('/active', async (req, res) => {
   try {
-      const { rows } = await pool.query('SELECT * FROM public.anio WHERE activo = true ORDER BY id DESC');
+      const { rows } = await pool.query('SELECT * FROM public.files');
       res.send(rows);
   } catch (err) {
       console.error(err.message);
@@ -27,12 +27,20 @@ router.get('/active', async (req, res) => {
   }
 });
 
-// Obtener un anio por su ID
-router.get('/:id', (req, res) => {
-  // Aquí iría la lógica para obtener un anio específico usando req.params.id
-  res.send(`Detalle del anio con ID ${req.params.id}`);
+// Obtener un file por su ID
+router.get('/:id', async (req, res) => {
+  // Aquí iría la lógica para obtener un file específico usando req.params.id
+  // res.send(`Detalle del file con ID ${req.params.id}`);
+  try {
+    const { rows } = await pool.query(`SELECT * FROM public.files WHERE id = ${req.params.id} LIMIT 1`);
+    res.send(rows);
+  } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Error del servidor');
+  }
 });
 
+/*
 router.post('/', async (req, res) => {
     const {
       name,activo
@@ -61,6 +69,7 @@ router.post('/', async (req, res) => {
   });
   
 
+  
 // Actualizar un Anio
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
@@ -128,4 +137,5 @@ router.get('/search', async (req, res) => {
     }
 });
 
+*/
 module.exports = router;
