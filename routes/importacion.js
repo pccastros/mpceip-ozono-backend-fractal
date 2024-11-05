@@ -29,7 +29,7 @@ router.get('/importador/:importador', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         // Consultar maestro
-        const masterQuery = 'SELECT id,created_at,updated_at,authorization_date,solicitud_date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion ORDER BY id';
+        const masterQuery = 'SELECT id,created_at::date,updated_at::date,authorization_date::date,solicitud_date::date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion ORDER BY id';
         const masterResult = await pool.query(masterQuery);
 
         if (masterResult.rows.length === 0) {
@@ -115,13 +115,13 @@ router.post('/', async (req, res) => {
     }
 
     // Insertar en la tabla maestra
-    const masterInsert = 'INSERT INTO public.importacion(authorization_date,solicitud_date, month, cupo_asignado, status, cupo_restante, total_solicitud, total_pesokg, vue, data_file_id, importador, years, country, proveedor, grupo, importador_id,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,NOW(),NOW()) RETURNING id';
+    const masterInsert = 'INSERT INTO public.importacion(authorization_date::date,solicitud_date::date, month, cupo_asignado, status, cupo_restante, total_solicitud, total_pesokg, vue, data_file_id, importador, years, country, proveedor, grupo, importador_id,created_at::date, updated_at::date) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,NOW(),NOW()) RETURNING id';
     const masterValues = [body.authorization_date,body.solicitud_date, body.month, body.cupo_asignado, body.status, body.cupo_restante, body.total_solicitud, body.total_pesokg, body.vue, body.data_file_id, body.importador, body.years, body.pais, body.proveedor, body.grupo, body.importador_id];
     const masterResult = await pool.query(masterInsert, masterValues);
 
     // Insertar en la tabla de detalles
     for (const detail of body.details) {
-      const detailInsert = 'INSERT INTO public.importacion_detail(cif, fob, peso_kg, peso_pao, sustancia, subpartida, ficha_id, importacion,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8,NOW(),NOW())';
+      const detailInsert = 'INSERT INTO public.importacion_detail(cif, fob, peso_kg, peso_pao, sustancia, subpartida, ficha_id, importacion,created_at::date, updated_at::date) VALUES($1, $2, $3, $4, $5, $6, $7, $8,NOW(),NOW())';
       const detailValues = [detail.cif, detail.fob, detail.peso_kg, detail.pao, detail.sustancia, detail.subpartida, detail.ficha_id, masterResult.rows[0].id];
       await pool.query(detailInsert, detailValues);
     }
