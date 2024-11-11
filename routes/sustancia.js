@@ -28,6 +28,17 @@ router.use(cors());
     }
   });
 
+  // Obtener solo los grupo_sust activos
+  router.get('/grupo/:grupoId', async (req, res) => {
+    try {
+        const { rows } = await pool.query(`SELECT * FROM public.sustancia WHERE sustancia.grupo_sust = '${req.params.grupoId}' AND activo = true ORDER BY sustancia.name`);
+        res.send(rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Error del servidor');
+    }
+  });
+
 // Obtener un Sustancia por su ID
 router.get('/:id', (req, res) => {
   // Aquí iría la lógica para obtener un Sustancia específico usando req.params.id

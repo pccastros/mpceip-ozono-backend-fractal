@@ -17,6 +17,29 @@ router.get('/:id', (req, res) => {
   res.send(`Detalle del importador con ID ${req.params.id}`);
 });
 
+
+// Obtener un importador sustancia
+router.get('/sustancia/:sustanciaId', async (req, res) => {
+  
+  console.log("AUIII")
+  console.log(req.params.sustanciaId)
+  try {
+    const { rows } = await pool.query(`SELECT im.*
+      FROM public.importador_sustancia is2
+      INNER JOIN public.grupo_sust gs ON is2.grupo_sust_id = gs.id
+      INNER JOIN public.importador im ON is2.importador_id = im.id
+      WHERE gs.name = '${req.params.sustanciaId}'
+      ORDER BY im.name`);
+
+      console.log(rows)
+    res.send(rows);
+  } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Error del servidor');
+  }
+
+});
+
 router.post('/', async (req, res) => {
     const {
       name, ruc, phone, user_import

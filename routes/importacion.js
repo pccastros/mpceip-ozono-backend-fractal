@@ -10,7 +10,7 @@ router.use(cors());
 router.get('/importador/:importador', async (req, res) => {
   const { importador } = req.params;
   try {
-    const statuses = ['Aprobado', 'Confirmado', 'Validado'];
+    const statuses = ['Aprobado', 'Reportado', 'Validado'];
     const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) ORDER BY id DESC', [importador, statuses]);    
     console.log(rows)
 
@@ -24,6 +24,21 @@ router.get('/importador/:importador', async (req, res) => {
   }
 });
 
+// Obtener importaciones por importador con estado Reportado
+router.get('/reportados/', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT * FROM public.importacion WHERE status = 'Reportado' ORDER BY id DESC`);    
+    console.log(rows)
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Importacion no encontrada' });
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor'+err.message);
+  }
+});
 
 // Obtener todos los importacion
 router.get('/', async (req, res) => {
@@ -115,13 +130,14 @@ router.post('/', async (req, res) => {
     }
 
     // Insertar en la tabla maestra
-    const masterInsert = 'INSERT INTO public.importacion(authorization_date::date,solicitud_date::date, month, cupo_asignado, status, cupo_restante, total_solicitud, total_pesokg, vue, data_file_id, importador, years, country, proveedor, grupo, importador_id,created_at::date, updated_at::date) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,NOW(),NOW()) RETURNING id';
-    const masterValues = [body.authorization_date,body.solicitud_date, body.month, body.cupo_asignado, body.status, body.cupo_restante, body.total_solicitud, body.total_pesokg, body.vue, body.data_file_id, body.importador, body.years, body.pais, body.proveedor, body.grupo, body.importador_id];
+    const masterInsert = 'INSERT INTO public.importacion(authorization_date,solicitud_date, month, cupo_asignado, status, cupo_restante, total_solicitud, total_pesokg, vue, data_file_id, importador, years, country, proveedor, grupo, importador_id,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,$15,$16,NOW(),NOW()) RETURNING id';
+    const masterValues = [body.authorization_date, body.solicitud_date, body.month, body.cupo_asignado, body.status, body.cupo_restante, body.total_solicitud, body.total_pesokg, body.vue, body.data_file_id, body.importador, body.years, body.pais, body.proveedor, body.grupo, body.importador_id];
+    console.log(masterValues)
     const masterResult = await pool.query(masterInsert, masterValues);
 
     // Insertar en la tabla de detalles
     for (const detail of body.details) {
-      const detailInsert = 'INSERT INTO public.importacion_detail(cif, fob, peso_kg, peso_pao, sustancia, subpartida, ficha_id, importacion,created_at::date, updated_at::date) VALUES($1, $2, $3, $4, $5, $6, $7, $8,NOW(),NOW())';
+      const detailInsert = 'INSERT INTO public.importacion_detail(cif, fob, peso_kg, peso_pao, sustancia, subpartida, ficha_id, importacion,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8,NOW(),NOW())';
       const detailValues = [detail.cif, detail.fob, detail.peso_kg, detail.pao, detail.sustancia, detail.subpartida, detail.ficha_id, masterResult.rows[0].id];
       await pool.query(detailInsert, detailValues);
     }
@@ -168,10 +184,10 @@ router.put('/status/:id', async (req, res) => {
 });
 
 // Confirmar importacion por id
-router.put('/confirm/:id', async (req, res) => {
+router.put('/reportar/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Confirmado', id]);
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Reportado', id]);
     res.json(`Importación ${id} confirmada con éxito`);
   } catch (err) {
     console.error(err.message);
@@ -197,7 +213,8 @@ router.put('/fileimport/:id', async (req, res) => {
     const id = req.params.id;
     const dai_file_id = req.body.dai_file_id;
     const factura_file_it = req.body.factura_file_it;
-    await pool.query('UPDATE public.importacion SET dai_file_id = $1, factura_file_it= $2 WHERE id = $3', [dai_file_id,factura_file_it, id]);
+    const dai = req.body.dai;
+    await pool.query('UPDATE public.importacion SET dai_file_id = $1, factura_file_it= $2, dai = $3 WHERE id = $4', [dai_file_id,factura_file_it, dai, id]);
     res.json(`Importación ${id} actualizada con éxito`);
   } catch (err) {
     console.error(err.message);
@@ -249,8 +266,8 @@ router.put('/aprobacion', async (req, res) => {
 
     // Actualizar en la tabla maestra
     const masterUpdate
-      = 'UPDATE public.importacion SET factura_file_it = $1, dai_file_id = $2, updated_at = NOW() WHERE id = $3';
-    const masterValues = [body.factura_file_it, body.dai_file_id, body.id];
+      = 'UPDATE public.importacion SET factura_file_it = $1, dai_file_id = $2, dai = $3, updated_at = NOW() WHERE id = $4';
+    const masterValues = [body.factura_file_it, body.dai_file_id, body.dai, body.id];
     await pool.query(masterUpdate, masterValues);
     await pool.query('COMMIT');
     res.json(`Importación ${id} actualizada con éxito`);
