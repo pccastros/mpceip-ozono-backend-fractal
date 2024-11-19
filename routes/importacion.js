@@ -11,6 +11,42 @@ router.get('/importador/:importador', async (req, res) => {
   const { importador } = req.params;
   try {
     const statuses = ['Aprobado', 'Reportado', 'Validado'];
+    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) AND activo = true ORDER BY id DESC', [importador, statuses]);    
+    console.log(rows)
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Importacion no encontrada' });
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor'+err.message);
+  }
+});
+
+// Obtener importaciones por importador con estado Aprobado
+router.get('/importadorPendientes/:importador', async (req, res) => {
+  const { importador } = req.params;
+  try {
+    const statuses = ['Aprobado', 'No Valido'];
+    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) AND activo = true ORDER BY id DESC', [importador, statuses]);    
+    console.log(rows)
+
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Importacion no encontrada' });
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor'+err.message);
+  }
+});
+
+// Obtener importaciones por importador con estado Aprobado
+router.get('/importadorPendientes/:importador', async (req, res) => {
+  const { importador } = req.params;
+  try {
+    const statuses = ['Aprobado'];
     const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) ORDER BY id DESC', [importador, statuses]);    
     console.log(rows)
 
@@ -23,6 +59,7 @@ router.get('/importador/:importador', async (req, res) => {
     res.status(500).send('Error del servidor'+err.message);
   }
 });
+
 
 // Obtener importaciones por importador con estado Reportado
 router.get('/reportados/', async (req, res) => {
@@ -44,7 +81,7 @@ router.get('/reportados/', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         // Consultar maestro
-        const masterQuery = 'SELECT id,created_at::date,updated_at::date,authorization_date::date,solicitud_date::date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion ORDER BY id';
+        const masterQuery = 'SELECT id,created_at::date,updated_at::date,authorization_date::date,solicitud_date::date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion WHERE activo = true ORDER BY id';
         const masterResult = await pool.query(masterQuery);
 
         if (masterResult.rows.length === 0) {
@@ -121,7 +158,7 @@ router.post('/', async (req, res) => {
     await pool.query('BEGIN');
 
     // Verificar si ya existe un registro con el mismo 'vue'
-    const checkDuplicate = 'SELECT COUNT(*) FROM public.importacion WHERE vue = $1';
+    const checkDuplicate = 'SELECT COUNT(*) FROM public.importacion WHERE vue = $1 AND activo = true';
     const duplicateResult = await pool.query(checkDuplicate, [body.vue]);
 
     if (duplicateResult.rows[0].count > 0) {
@@ -175,7 +212,7 @@ router.delete('/:id', async (req, res) => {
 router.put('/status/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Aprobado', id]);
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2 AND activo = true', ['Aprobado', id]);
     res.json(`Importación ${id} aprobada con éxito`);
   } catch (err) {
     console.error(err.message);
@@ -206,6 +243,19 @@ router.put('/validate/:id', async (req, res) => {
     res.status(500).send('Error del servidor'+err.message);
   }
 });
+
+// Validar importacion por id
+router.put('/novalidate/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['No Valido', id]);
+    res.json(`Importación ${id} confirmada con éxito`);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor'+err.message);
+  }
+});
+
 
 router.put('/fileimport/:id', async (req, res) => {
   try {

@@ -7,10 +7,9 @@ const cors = require('cors');
 router.use(cors());
 // Obtener todos los Cupos
 router.get('/', async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM public.cupo');
+  const { rows } = await pool.query('SELECT * FROM public.cupo WHERE activo = true');
   res.send(rows);
 });
-
 
 
 //busqueda
@@ -20,19 +19,50 @@ router.get('/:id', async (req, res) => {
   } = req.params;
   try {
     // const { rows } = await pool.query('SELECT * FROM public.cupo WHERE importador_id = $1', [id]);
+    // const { rows } = await pool.query(`
+    //   SELECT cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc,
+    //   SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hcfc,
+    //   SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hfc,
+    //   SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS solicitudes_polioles,
+    //   cu.hcfc::numeric -SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
+    //     cu.hfc::numeric - SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hfc,
+    //     SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS total_polioles
+    //   FROM public.cupo cu
+    //   INNER JOIN public.importacion im ON cu.importador_id = im.importador_id
+    //   WHERE cu.importador_id = $1
+    //   AND cu.activo = true
+    //   GROUP BY cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc
+    // `, [id]);
+
     const { rows } = await pool.query(`
-      SELECT cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc,
-      SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hcfc,
-      SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hfc,
-      SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS solicitudes_polioles,
-      cu.hcfc::numeric -SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
-        cu.hfc::numeric - SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hfc,
-        SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS total_polioles
-      FROM public.cupo cu
-      INNER JOIN public.importacion im ON cu.importador_id = im.importador_id
-      WHERE cu.importador_id = $1
-      GROUP BY cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc
+    SELECT
+        c.importador_id,
+        c.anio,
+        c.hfc,
+        c.hcfc,
+      SUM(CASE WHEN i.grupo = 'hfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hfc,
+        SUM(CASE WHEN i.grupo = 'hcfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hcfc,
+      SUM(CASE WHEN i.grupo = 'polioles' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_polioles,
+        c.hfc::numeric - SUM(CASE WHEN i.grupo = 'hfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hfc,
+        c.hcfc::numeric - SUM(CASE WHEN i.grupo = 'hcfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
+      SUM(CASE WHEN i.grupo = 'polioles' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS total_polioles
+    FROM
+        public.cupo c
+    JOIN
+        public.importacion i
+        ON c.importador_id = i.importador_id
+    WHERE
+      c.importador_id = $1
+        AND c.activo = true
+    GROUP BY
+        c.importador_id,
+        c.anio,
+        c.hfc,
+        c.hcfc
+    ORDER BY
+        c.importador_id, c.anio;
     `, [id]);
+
 
     if (rows.length === 0) {
       return res.status(404).json({ msg: 'Cupo no encontrado' });
@@ -52,9 +82,12 @@ router.post('/', async (req, res) => {
     importador_id, importador, anio, hfc, hcfc
   } = req.body;
 
+  console.log(req.body)
+
   try {
     // Verificar si el Cupo ya existe para el mismo importador y año
-    const { rows } = await pool.query('SELECT * FROM public.cupo WHERE importador_id = $1 AND anio = $2', [importador_id, anio]);
+    const { rows } = await pool.query('SELECT * FROM public.cupo WHERE importador_id = $1 AND anio = $2 and activo = true', [importador_id, anio]);
+    console.log(rows)
     if (rows.length > 0) {
       return res.status(400).json({ msg: 'Ya existe un cupo paera el importador en el mismo año.' });
     }
@@ -76,14 +109,17 @@ router.post('/', async (req, res) => {
 
 // Actualizar un cupo
 router.put('/:id', async (req, res) => {
-  const { id } = req.params;
-  const { importador_id, importador, anio, hfc, hcfc } = req.body;
+  // const { id } = req.params;
+  console.log(req.body)
+  const { id, importador_id, importador, anio, hfc, hcfc } = req.body;
+
+  console.log(id, importador_id, importador, anio, hfc, hcfc)
 
   try {
     // Primero, verificar si existe otro cupo con el mismo importador y año
     const existsQuery = `
           SELECT * FROM public.cupo
-          WHERE importador_id = $1 AND anio = $2 AND id != $3;
+          WHERE importador_id = $1 AND anio = $2 AND id != $3 and activo = true;
       `;
     const existsResult = await pool.query(existsQuery, [importador_id, anio, id]);
 

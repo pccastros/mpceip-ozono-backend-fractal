@@ -7,7 +7,7 @@ const cors = require('cors');
 router.use(cors());
 // Obtener todos los importador
 router.get('/', async (req, res) => {
-    const { rows } = await pool.query('SELECT * FROM public.importador ORDER BY name');
+    const { rows } = await pool.query('SELECT * FROM public.importador WHERE activo = true ORDER BY name');
     res.send(rows);
   });
 
@@ -24,12 +24,20 @@ router.get('/sustancia/:sustanciaId', async (req, res) => {
   console.log("AUIII")
   console.log(req.params.sustanciaId)
   try {
-    const { rows } = await pool.query(`SELECT im.*
-      FROM public.importador_sustancia is2
-      INNER JOIN public.grupo_sust gs ON is2.grupo_sust_id = gs.id
-      INNER JOIN public.importador im ON is2.importador_id = im.id
-      WHERE gs.name = '${req.params.sustanciaId}'
-      ORDER BY im.name`);
+    // const { rows } = await pool.query(`SELECT im.*
+    //   FROM public.importador_sustancia is2
+    //   INNER JOIN public.grupo_sust gs ON is2.grupo_sust_id = gs.id
+    //   INNER JOIN public.importador im ON is2.importador_id = im.id
+    //   WHERE gs.name = '${req.params.sustanciaId}'
+    //   ORDER BY im.name`);
+
+    const { rows } = await pool.query(`
+    SELECT *
+    FROM public.cupo cu
+    INNER JOIN public.importador im ON cu.importador_id = im.id
+    WHERE cu.${req.params.sustanciaId.toLowerCase()}::numeric > 0
+    AND cu.activo = true
+  `);
 
       console.log(rows)
     res.send(rows);
@@ -71,16 +79,18 @@ router.post('/', async (req, res) => {
 // Actualizar un importador
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, ruc,phone, user_import} = req.body;
+  const { name, ruc,phone, user_import, id_user} = req.body;
+
+  console.log(req.body);
 
   try {
       const updateQuery = `
           UPDATE public.importador
-          SET name = $1, ruc = $2, phone = $3, user_import = $4, updated_at = NOW()
-          WHERE id = $5
+          SET name = $1, ruc = $2, phone = $3, user_import = $4, id_user = $5, updated_at = NOW()
+          WHERE id = $6
           RETURNING *;
       `;
-      const { rows } = await pool.query(updateQuery, [name, ruc,phone, user_import, id]);
+      const { rows } = await pool.query(updateQuery, [name, ruc,phone, user_import, id_user, id]);
       //const rows = result.rows;
 
       if (rows.length === 0) {
