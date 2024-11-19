@@ -64,7 +64,7 @@ router.get('/importadorPendientes/:importador', async (req, res) => {
 // Obtener importaciones por importador con estado Reportado
 router.get('/reportados/', async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT * FROM public.importacion WHERE status = 'Reportado' ORDER BY id DESC`);
+    const { rows } = await pool.query(`SELECT * FROM public.importacion WHERE status = 'Reportado' AND activo = true ORDER BY id DESC`);
     console.log(rows)
 
     // if (rows.length === 0) {
