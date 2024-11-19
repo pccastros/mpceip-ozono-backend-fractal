@@ -40,12 +40,12 @@ router.get('/:id', async (req, res) => {
         c.anio,
         c.hfc,
         c.hcfc,
-      SUM(CASE WHEN i.grupo = 'hfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hfc,
-        SUM(CASE WHEN i.grupo = 'hcfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hcfc,
-      SUM(CASE WHEN i.grupo = 'polioles' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_polioles,
-        c.hfc::numeric - SUM(CASE WHEN i.grupo = 'hfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hfc,
-        c.hcfc::numeric - SUM(CASE WHEN i.grupo = 'hcfc' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
-      SUM(CASE WHEN i.grupo = 'polioles' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS total_polioles
+      SUM(CASE WHEN i.grupo = 'HFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hfc,
+        SUM(CASE WHEN i.grupo = 'HCFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hcfc,
+      SUM(CASE WHEN i.grupo = 'POLIOLES' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_polioles,
+        c.hfc::numeric - SUM(CASE WHEN i.grupo = 'HFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hfc,
+        c.hcfc::numeric - SUM(CASE WHEN i.grupo = 'HCFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
+      SUM(CASE WHEN i.grupo = 'POLIOLES' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS total_polioles
     FROM
         public.cupo c
     JOIN

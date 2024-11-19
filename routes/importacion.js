@@ -11,7 +11,7 @@ router.get('/importador/:importador', async (req, res) => {
   const { importador } = req.params;
   try {
     const statuses = ['Aprobado', 'Reportado', 'Validado'];
-    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) AND activo = true ORDER BY id DESC', [importador, statuses]);    
+    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) AND activo = true ORDER BY id DESC', [importador, statuses]);
     console.log(rows)
 
     if (rows.length === 0) {
@@ -20,7 +20,7 @@ router.get('/importador/:importador', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
@@ -29,7 +29,7 @@ router.get('/importadorPendientes/:importador', async (req, res) => {
   const { importador } = req.params;
   try {
     const statuses = ['Aprobado', 'No Valido'];
-    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) AND activo = true ORDER BY id DESC', [importador, statuses]);    
+    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) AND activo = true ORDER BY id DESC', [importador, statuses]);
     console.log(rows)
 
     if (rows.length === 0) {
@@ -38,7 +38,7 @@ router.get('/importadorPendientes/:importador', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
@@ -47,7 +47,7 @@ router.get('/importadorPendientes/:importador', async (req, res) => {
   const { importador } = req.params;
   try {
     const statuses = ['Aprobado'];
-    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) ORDER BY id DESC', [importador, statuses]);    
+    const { rows } = await pool.query('SELECT * FROM public.importacion WHERE importador_id = $1 AND status = ANY($2) ORDER BY id DESC', [importador, statuses]);
     console.log(rows)
 
     if (rows.length === 0) {
@@ -56,7 +56,7 @@ router.get('/importadorPendientes/:importador', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
@@ -64,92 +64,99 @@ router.get('/importadorPendientes/:importador', async (req, res) => {
 // Obtener importaciones por importador con estado Reportado
 router.get('/reportados/', async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT * FROM public.importacion WHERE status = 'Reportado' ORDER BY id DESC`);    
+    const { rows } = await pool.query(`SELECT * FROM public.importacion WHERE status = 'Reportado' ORDER BY id DESC`);
     console.log(rows)
 
-    if (rows.length === 0) {
-      return res.status(404).json({ msg: 'Importacion no encontrada' });
-    }
+    // if (rows.length === 0) {
+    //   return res.status(404).json({ msg: 'Importacion no encontrada' });
+    // }
     res.json(rows);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
 // Obtener todos los importacion
 router.get('/', async (req, res) => {
-    try {
-        // Consultar maestro
-        const masterQuery = 'SELECT id,created_at::date,updated_at::date,authorization_date::date,solicitud_date::date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion WHERE activo = true ORDER BY id';
-        const masterResult = await pool.query(masterQuery);
+  try {
+    // Consultar maestro
+    const masterQuery = 'SELECT id,created_at::date,updated_at::date,authorization_date::date,solicitud_date::date,month,cupo_asignado,status,cupo_restante,total_solicitud,total_pesoKg,vue,importador,user_id,years,country,proveedor,send_email,grupo,data_file_id,dai_file_id,factura_file_it FROM public.importacion WHERE activo = true ORDER BY id';
+    const masterResult = await pool.query(masterQuery);
 
-        if (masterResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Master records not found' });
-        }
-
-        // Consultar detalles asociados a cada maestro
-        //for (let i = 0; i < masterResult.rows.length; i++) {
-        //  const detailQuery = `SELECT * FROM public.importacion_detail WHERE importacion = ${masterResult.rows[i].id}`;
-         // const detailResult = await pool.query(detailQuery);
-         // masterResult.rows[i].details = detailResult.rows;
-       // }
-
-        console.log(masterResult.rows[0]);
-        res.json(masterResult.rows);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error'+err.message);
+    if (masterResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Master records not found' });
     }
-  });
-  // Obtener todos los importacion por el id del importador
+
+    // Consultar detalles asociados a cada maestro
+    //for (let i = 0; i < masterResult.rows.length; i++) {
+    //  const detailQuery = `SELECT * FROM public.importacion_detail WHERE importacion = ${masterResult.rows[i].id}`;
+    // const detailResult = await pool.query(detailQuery);
+    // masterResult.rows[i].details = detailResult.rows;
+    // }
+
+    console.log(masterResult.rows[0]);
+    res.json(masterResult.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error' + err.message);
+  }
+});
+// Obtener todos los importacion por el id del importador
 router.get('/:importacion', async (req, res) => {
   console.log(req.params);
-    const { importacion } = req.params;
-    try {
+  const { importacion } = req.params;
+  try {
 
-        // Consultar maestro
-        const masterQuery = 'SELECT * FROM public.importacion where id = $1';
-        const masterResult = await pool.query(masterQuery, [importacion]);
+    // Consultar maestro
+    const masterQuery = 'SELECT * FROM public.importacion where id = $1';
+    const masterResult = await pool.query(masterQuery, [importacion]);
 
-        if (masterResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Master records not found' });
-        }
-
-        // Consultar detalles asociados a cada maestro
-        for (let i = 0; i < masterResult.rows.length; i++) {
-          const detailQuery = `SELECT * FROM public.importacion_detail WHERE importacion = ${masterResult.rows[i].id}`;
-          const detailResult = await pool.query(detailQuery);
-          masterResult.rows[i].details = detailResult.rows;
-        }
-        res.json(masterResult.rows);
-
-      }
-
-    catch (err) {
-
-        console.error(err.message);
-        res.status(500).send('Server Error');
+    if (masterResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Master records not found' });
     }
-  });
+
+    // Consultar detalles asociados a cada maestro
+    for (let i = 0; i < masterResult.rows.length; i++) {
+      const detailQuery = `SELECT * FROM public.importacion_detail WHERE importacion = ${masterResult.rows[i].id}`;
+      const detailResult = await pool.query(detailQuery);
+      masterResult.rows[i].details = detailResult.rows;
+    }
+    for (let i = 0; i < masterResult.rows.length; i++) {
+      const detailQuery = `SELECT * FROM public.importacion_validate WHERE importacion = ${masterResult.rows[i].id}`;
+      const detailResult = await pool.query(detailQuery);
+      masterResult.rows[i].validate = detailResult.rows;
+    }
+
+    res.json(masterResult.rows);
+
+  }
+
+  catch (err) {
+
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
 
 
 //Trae solo el total de la solicitud de importacion para calcular el cupo restate
 router.get('/cuposolicitud/:importador', async (req, res) => {
-    const { importador } = req.params;
-    const { filtro } = req.query;
+  const { importador } = req.params;
+  const { filtro } = req.query;
 
-    try {
-        const { rows } = await pool.query('SELECT COALESCE(sum(total_solicitud), 0) as total_solicitud FROM public.importacion WHERE importador = $1 AND grupo = UPPER($2)', [importador, filtro]);
+  try {
+    const { rows } = await pool.query('SELECT COALESCE(sum(total_solicitud), 0) as total_solicitud FROM public.importacion WHERE importador = $1 AND grupo = UPPER($2)', [importador, filtro]);
 
-      if (rows.length === 0) {
-        return res.status(404).json({ msg: 'Importacion no encontrada' });
-      }
-      res.json(rows[0]);
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send('Error del servidor'+err.message);
-    }});
+    if (rows.length === 0) {
+      return res.status(404).json({ msg: 'Importacion no encontrada' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor' + err.message);
+  }
+});
 
 router.post('/', async (req, res) => {
   const body = req.body;
@@ -181,18 +188,155 @@ router.post('/', async (req, res) => {
 
     await pool.query('COMMIT');
     res.status(201).json({ message: 'Importación creada con éxito' });
-    } catch (err) {
+  } catch (err) {
     await pool.query('ROLLBACK');
     console.error(err);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
+
+
+router.post('/importacionValidate', async (req, res) => {
+  const body = req.body;
+
+  try {
+    // Iniciar transacción
+    await pool.query('BEGIN');
+
+    // Insertar en la tabla de detalles
+    for (const detail of body.details) {
+      const detailInsert = 'INSERT INTO public.importacion_validate(cif, fob, peso_kg, peso_pao, sustancia, subpartida, ficha_id, importacion,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8,NOW(),NOW())';
+      const detailValues = [detail.cif, detail.fob, detail.peso_kg, detail.pao, detail.sustancia, detail.subpartida, detail.ficha_id, detail.importacion_id];
+      await pool.query(detailInsert, detailValues);
+    }
+
+    await pool.query('COMMIT');
+    res.status(201).json({ message: 'Importación creada con éxito' });
+  } catch (err) {
+    await pool.query('ROLLBACK');
+    console.error(err);
+    res.status(500).send('Error del servidor' + err.message);
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// router.get('/importacionValidate/:importacion', async (req, res) => {
+//   const body = req.body;
+
+//   try {
+//     // Iniciar transacción
+//     await pool.query('BEGIN');
+
+//     // Insertar en la tabla de detalles
+//     for (const detail of body.details) {
+//       const detailInsert = 'INSERT INTO public.importacion_validate(cif, fob, peso_kg, peso_pao, sustancia, subpartida, ficha_id, importacion,created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8,NOW(),NOW())';
+//       const detailValues = [detail.cif, detail.fob, detail.peso_kg, detail.pao, detail.sustancia, detail.subpartida, detail.ficha_id, detail.importacion_id];
+//       await pool.query(detailInsert, detailValues);
+//     }
+
+//     await pool.query('COMMIT');
+//     res.status(201).json({ message: 'Importación creada con éxito' });
+//   } catch (err) {
+//     await pool.query('ROLLBACK');
+//     console.error(err);
+//     res.status(500).send('Error del servidor' + err.message);
+//   }
+// });
+
+
+// // Obtener todos los importacion por el id del importador
+// router.get('/:importacion', async (req, res) => {
+//   console.log(req.params);
+//   const { importacion } = req.params;
+//   try {
+
+//     // Consultar maestro
+//     const masterQuery = 'SELECT * FROM public.importacion where id = $1';
+//     const masterResult = await pool.query(masterQuery, [importacion]);
+
+//     if (masterResult.rows.length === 0) {
+//       return res.status(404).json({ message: 'Master records not found' });
+//     }
+
+//     // Consultar detalles asociados a cada maestro
+//     for (let i = 0; i < masterResult.rows.length; i++) {
+//       const detailQuery = `SELECT * FROM public.importacion_detail WHERE importacion = ${masterResult.rows[i].id}`;
+//       const detailResult = await pool.query(detailQuery);
+//       masterResult.rows[i].details = detailResult.rows;
+//     }
+//     res.json(masterResult.rows);
+
+//   }
+
+//   catch (err) {
+
+//     console.error(err.message);
+//     res.status(500).send('Server Error');
+//   }
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Establecer el mecanismo para delete por id con el método DELETE master y detail
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-  try
-  {
+  try {
     await pool.query('BEGIN');
     await pool.query('DELETE FROM public.importacion_detail WHERE importacion = $1', [id]);
     await pool.query('DELETE FROM public.importacion WHERE id = $1', [id]);
@@ -203,7 +347,7 @@ router.delete('/:id', async (req, res) => {
   ) {
     await pool.query('ROLLBACK');
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 }
 );
@@ -216,7 +360,7 @@ router.put('/status/:id', async (req, res) => {
     res.json(`Importación ${id} aprobada con éxito`);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
@@ -228,7 +372,7 @@ router.put('/reportar/:id', async (req, res) => {
     res.json(`Importación ${id} confirmada con éxito`);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
@@ -240,7 +384,7 @@ router.put('/validate/:id', async (req, res) => {
     res.json(`Importación ${id} confirmada con éxito`);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
@@ -252,7 +396,7 @@ router.put('/novalidate/:id', async (req, res) => {
     res.json(`Importación ${id} confirmada con éxito`);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 });
 
@@ -264,11 +408,11 @@ router.put('/fileimport/:id', async (req, res) => {
     const dai_file_id = req.body.dai_file_id;
     const factura_file_it = req.body.factura_file_it;
     const dai = req.body.dai;
-    await pool.query('UPDATE public.importacion SET dai_file_id = $1, factura_file_it= $2, dai = $3 WHERE id = $4', [dai_file_id,factura_file_it, dai, id]);
+    await pool.query('UPDATE public.importacion SET dai_file_id = $1, factura_file_it= $2, dai = $3 WHERE id = $4', [dai_file_id, factura_file_it, dai, id]);
     res.json(`Importación ${id} actualizada con éxito`);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 }
 );
@@ -296,7 +440,7 @@ router.put('/', async (req, res) => {
   ) {
     await pool.query('ROLLBACK');
     console.error(err.message);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 }
 );
@@ -326,7 +470,7 @@ router.put('/aprobacion', async (req, res) => {
   ) {
     await pool.query('ROLLBACK');
     console.error(err);
-    res.status(500).send('Error del servidor'+err.message);
+    res.status(500).send('Error del servidor' + err.message);
   }
 }
 
