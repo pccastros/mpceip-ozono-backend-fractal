@@ -31,13 +31,30 @@ router.get('/sustancia/:sustanciaId', async (req, res) => {
     //   WHERE gs.name = '${req.params.sustanciaId}'
     //   ORDER BY im.name`);
 
+    // const { rows } = await pool.query(`
+    // SELECT *
+    // FROM public.cupo cu
+    // INNER JOIN public.importador im ON cu.importador_id = im.id
+    // WHERE cu.${req.params.sustanciaId.toLowerCase()}::numeric > 0
+    // AND cu.activo = true
+  // `);
+
+
     const { rows } = await pool.query(`
     SELECT *
-    FROM public.cupo cu
-    INNER JOIN public.importador im ON cu.importador_id = im.id
-    WHERE cu.${req.params.sustanciaId.toLowerCase()}::numeric > 0
-    AND cu.activo = true
-  `);
+    FROM public.importador im
+    LEFT JOIN public.cupo cu ON cu.importador_id = im.id
+    WHERE im.activo = true
+      AND (
+        CASE
+          WHEN '${req.params.sustanciaId.toLowerCase()}' IN ('hfc', 'hcfc')
+          THEN cu.${req.params.sustanciaId.toLowerCase()}::numeric > 0
+          ELSE true
+        END
+      );
+    
+    `);
+
 
       console.log(rows)
     res.send(rows);
