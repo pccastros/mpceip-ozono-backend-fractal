@@ -54,6 +54,8 @@ router.get('/:id', async (req, res) => {
     WHERE
       c.importador_id = $1
         AND c.activo = true
+        AND i.activo = true
+        AND i.status in ('Aprobado', 'Reportado', 'Validado')
     GROUP BY
         c.importador_id,
         c.anio,
