@@ -41,7 +41,7 @@ router.get('/sustancia/:sustanciaId', async (req, res) => {
 
 
     const { rows } = await pool.query(`
-    SELECT *
+    SELECT *, im.id as importador_id
     FROM public.importador im
     LEFT JOIN public.cupo cu ON cu.importador_id = im.id
     WHERE im.activo = true
