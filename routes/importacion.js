@@ -389,16 +389,29 @@ router.put('/validate/:id', async (req, res) => {
 });
 
 // Validar importacion por id
-router.put('/novalidate/:id', async (req, res) => {
+router.put('/eliminarAprobado/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['No Valido', id]);
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Eliminado', id]);
     res.json(`Importación ${id} confirmada con éxito`);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Error del servidor' + err.message);
   }
 });
+
+// Validar importacion por id
+router.put('/validate/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Validado', id]);
+    res.json(`Importación ${id} confirmada con éxito`);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Error del servidor' + err.message);
+  }
+});
+
 
 
 router.put('/fileimport/:id', async (req, res) => {
@@ -417,33 +430,139 @@ router.put('/fileimport/:id', async (req, res) => {
 }
 );
 
+// router.put('/', async (req, res) => {
+
+//   const body = req.body;
+//   try {
+//     console.log(req.body);
+//     const id = req.body.id;
+
+//     // Iniciar transacción
+//     await pool.query('BEGIN');
+
+//     // Actualizar en la tabla maestra
+//     const masterUpdate
+//       = 'UPDATE public.importacion SET cupo_restante = $1, total_solicitud = $2, total_pesokg = $3, updated_at = NOW() WHERE id = $4';
+//     const masterValues = [body.cupo_restante, body.total_solicitud, body.total_pesokg, body.id];
+//     await pool.query(masterUpdate, masterValues);
+//     res.json(`Importación ${id} actualizada con éxito`);
+
+
+//   }
+//   catch (err
+//   ) {
+//     await pool.query('ROLLBACK');
+//     console.error(err.message);
+//     res.status(500).send('Error del servidor' + err.message);
+//   }
+// }
+// );
+
 router.put('/', async (req, res) => {
+  const id = req.body.id;
+  // El ID de la importación a actualizar
+  const body = req.body; // Los datos nuevos que se enviarán para actualizar
 
-  const body = req.body;
+console.log("=====================")
+
+console.log(body)
+
   try {
-    console.log(req.body);
-    const id = req.body.id;
-
     // Iniciar transacción
     await pool.query('BEGIN');
 
-    // Actualizar en la tabla maestra
-    const masterUpdate
-      = 'UPDATE public.importacion SET cupo_restante = $1, total_solicitud = $2, total_pesokg = $3, updated_at = NOW() WHERE id = $4';
-    const masterValues = [body.cupo_restante, body.total_solicitud, body.total_pesokg, body.id];
+    // Verificar si existe la importación con el ID proporcionado
+    const checkExistingImport = 'SELECT COUNT(*) FROM public.importacion WHERE id = $1 AND activo = true';
+    const existingImportResult = await pool.query(checkExistingImport, [id]);
+
+    if (existingImportResult.rows[0].count === 0) {
+      // Si no existe la importación, devolver error
+      return res.status(404).json({ message: 'Importación no encontrada' });
+    }
+
+    // Actualizar la tabla maestra (importacion)
+    const masterUpdate = `
+      UPDATE public.importacion 
+      SET 
+        authorization_date = $1,
+        solicitud_date = $2,
+        month = $3,
+        cupo_asignado = $4,
+        status = $5,
+        cupo_restante = $6,
+        total_solicitud = $7,
+        total_pesokg = $8,
+        vue = $9,
+        data_file_id = $10,
+        importador = $11,
+        years = $12,
+        country = $13,
+        proveedor = $14,
+        grupo = $15,
+        importador_id = $16,
+        updated_at = NOW()
+      WHERE id = $17
+    `;
+    const masterValues = [
+      body.authorization_date,
+      body.solicitud_date,
+      body.month,
+      body.cupo_asignado,
+      body.status,
+      body.cupo_restante,
+      body.total_solicitud,
+      body.total_pesokg,
+      body.vue,
+      body.data_file_id,
+      body.importador,
+      body.years,
+      body.pais,
+      body.proveedor,
+      body.grupo,
+      body.importador_id,
+      id
+    ];
+
     await pool.query(masterUpdate, masterValues);
-    res.json(`Importación ${id} actualizada con éxito`);
 
+    // Borrar los detalles antiguos de la importación (si fuera necesario)
+    const deleteDetails = 'DELETE FROM public.importacion_detail WHERE importacion = $1';
+    await pool.query(deleteDetails, [id]);
 
-  }
-  catch (err
-  ) {
+    // Insertar los nuevos detalles
+    for (const detail of body.details) {
+      const detailInsert = `
+        INSERT INTO public.importacion_detail
+        (cif, fob, peso_kg, peso_pao, sustancia, subpartida, ficha_id, importacion, created_at, updated_at)
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      `;
+      const detailValues = [
+        detail.cif, 
+        detail.fob, 
+        detail.peso_kg, 
+        detail.pao, 
+        detail.sustancia, 
+        detail.subpartida, 
+        detail.ficha_id, 
+        id
+      ];
+      await pool.query(detailInsert, detailValues);
+    }
+
+    // Confirmar la transacción
+    await pool.query('COMMIT');
+
+    res.status(200).json({ message: 'Importación actualizada con éxito' });
+
+  } catch (err) {
+    // Si ocurre un error, hacer rollback
     await pool.query('ROLLBACK');
-    console.error(err.message);
-    res.status(500).send('Error del servidor' + err.message);
+    console.error(err);
+    res.status(500).send('Error del servidor: ' + err.message);
   }
-}
-);
+});
+
+
 
 router.put('/aprobacion', async (req, res) => {
 
