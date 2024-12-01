@@ -392,7 +392,7 @@ router.put('/validate/:id', async (req, res) => {
 router.put('/eliminarAprobado/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Eliminado', id]);
+    await pool.query('UPDATE public.importacion SET status = $1 WHERE id = $2', ['Anulado', id]);
     res.json(`Importación ${id} confirmada con éxito`);
   } catch (err) {
     console.error(err.message);
