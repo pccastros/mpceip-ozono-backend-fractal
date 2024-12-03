@@ -18,44 +18,28 @@ router.get('/:id', async (req, res) => {
     id
   } = req.params;
   try {
-    // const { rows } = await pool.query('SELECT * FROM public.cupo WHERE importador_id = $1', [id]);
-    // const { rows } = await pool.query(`
-    //   SELECT cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc,
-    //   SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hcfc,
-    //   SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS solicitudes_hfc,
-    //   SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS solicitudes_polioles,
-    //   cu.hcfc::numeric -SUM(CASE WHEN grupo = 'HCFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
-    //     cu.hfc::numeric - SUM(CASE WHEN grupo = 'HFC' THEN total_solicitud ELSE 0 END) AS cupo_restante_hfc,
-    //     SUM(CASE WHEN grupo = 'POLIOLES' THEN total_solicitud ELSE 0 END) AS total_polioles
-    //   FROM public.cupo cu
-    //   INNER JOIN public.importacion im ON cu.importador_id = im.importador_id
-    //   WHERE cu.importador_id = $1
-    //   AND cu.activo = true
-    //   GROUP BY cu.id, cu.importador_id, cu.anio, cu.hfc, cu.hcfc
-    // `, [id]);
-
     const { rows } = await pool.query(`
     SELECT
         c.importador_id,
         c.anio,
         c.hfc,
         c.hcfc,
-      SUM(CASE WHEN i.grupo = 'HFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hfc,
-        SUM(CASE WHEN i.grupo = 'HCFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_hcfc,
-      SUM(CASE WHEN i.grupo = 'POLIOLES' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS solicitudes_polioles,
-        c.hfc::numeric - SUM(CASE WHEN i.grupo = 'HFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hfc,
-        c.hcfc::numeric - SUM(CASE WHEN i.grupo = 'HCFC' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
-      SUM(CASE WHEN i.grupo = 'POLIOLES' AND i.activo = true THEN i.total_solicitud ELSE 0 END) AS total_polioles
+        SUM(CASE WHEN i.grupo = 'HFC' AND i.activo = true AND i.status in ('Aprobado', 'Reportado', 'Validado') THEN i.total_solicitud ELSE 0 END) AS solicitudes_hfc,
+        SUM(CASE WHEN i.grupo = 'HCFC' AND i.activo = true AND i.status in ('Aprobado', 'Reportado', 'Validado') THEN i.total_solicitud ELSE 0 END) AS solicitudes_hcfc,
+      SUM(CASE WHEN i.grupo = 'POLIOLES' AND i.activo = true AND i.status in ('Aprobado', 'Reportado', 'Validado') THEN i.total_solicitud ELSE 0 END) AS solicitudes_polioles,
+        c.hfc::numeric - SUM(CASE WHEN i.grupo = 'HFC' AND i.activo = true AND i.status in ('Aprobado', 'Reportado', 'Validado') THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hfc,
+        c.hcfc::numeric - SUM(CASE WHEN i.grupo = 'HCFC' AND i.activo = true AND i.status in ('Aprobado', 'Reportado', 'Validado') THEN i.total_solicitud ELSE 0 END) AS cupo_restante_hcfc,
+      SUM(CASE WHEN i.grupo = 'POLIOLES' AND i.activo = true AND i.status in ('Aprobado', 'Reportado', 'Validado') THEN i.total_solicitud ELSE 0 END) AS total_polioles
     FROM
         public.cupo c
-    JOIN
+    LEFT JOIN
         public.importacion i
         ON c.importador_id = i.importador_id
     WHERE
       c.importador_id = $1
         AND c.activo = true
-        AND i.activo = true
-        AND i.status in ('Aprobado', 'Reportado', 'Validado')
+        --AND i.activo = true
+        --AND i.status in ('Aprobado', 'Reportado', 'Validado')
     GROUP BY
         c.importador_id,
         c.anio,
